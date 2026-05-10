@@ -1,12 +1,12 @@
 ---
 title: Weapon Precision System
-description: UE 5.7 plugin for trace and view precision with full multiplayer support
+description: UE plugin for trace and view precision with full multiplayer support
 ---
 
 ![Thumbnail](../../../assets/weaponprecisionsystem/thumbnail.png)
 
 > **Version:** v1.0.0
-> **Engine:** UE 5.7
+> **Engine:** UE 5.5 - 5.7
 
 ---
 
@@ -96,7 +96,7 @@ Design guideline: Use RecoilPattern for weapons with a learnable, deterministic 
 
 Both spread and recoil can be scaled at runtime using a named context system:
 
-```
+```cpp
 
 WeaponTracePrecisionComponent->SetSpreadScale(FName("ADS"), 0.3f);
 WeaponTracePrecisionComponent->SetRecoilScale(FName("ADS"), 0.6f);
@@ -162,14 +162,10 @@ BP_WeaponPrecisionTarget - Place one of these for each shot in the pattern. Each
 
 The system follows a server-authoritative model with client-side visual feedback:
 
-1. The owning client calls CalculateTraceDirection locally (on the weapon, which may run on any machine depending on your authority model).  
-
-2. The computed RecoilOffset is sent to the server via Server_CalculateRecoilOffset (a reliable server RPC).  
-
-3. The server applies ViewPrecisionPercentage and sends the scaled offset back to the owning client via Client_AddRecoilControllerInput (a reliable client RPC).  
-
+1. The authority calls CalculateTraceDirection.  
+2. The computed RecoilOffset is sent via Server_CalculateRecoilOffset.  
+3. The server applies ViewPrecisionPercentage and sends the scaled offset back to the owning client via Client_AddRecoilControllerInput.  
 4. The client adds the offset as controller input, rotating the camera.  
-
 5. ControlRecoilOffsetToRemove is replicated to the owning client so that recoil recovery is correctly synchronised.  
 
 No additional setup is required. Ensure the UWeaponViewPrecisionPawnComponent is added to a replicated actor (your Pawn or Character) and that SetIsReplicatedByDefault is respected, which it is by default.
@@ -218,4 +214,3 @@ Inspect the Blueprint graphs in the demo assets for annotated examples of each i
 | `StopResetRecoilOffset()`   | Aborts recovery          |
 | `K2_StartResetRecoilOffset` | Implement recovery logic |
 | `K2_StopResetRecoilOffset`  | Implement abort logic    |
-

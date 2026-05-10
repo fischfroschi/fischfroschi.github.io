@@ -22,6 +22,13 @@ export default defineConfig({
 						{ label: 'Overview', link: 'weaponprecisionsystem' },
                         { label: 'Tutorial', link: 'weaponprecisionsystem/tutorial' },
 					],
+				},
+                {
+					label: 'Weapon Range Damage',
+					items: [
+						{ label: 'Overview', link: 'weaponrangedamage' },
+                        { label: 'Tutorial', link: 'weaponrangedamage/tutorial' },
+					],
 				}
 			],
 		}),
