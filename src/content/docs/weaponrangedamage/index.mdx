@@ -136,11 +136,6 @@ The plugin includes in-editor Blueprint tooling for designing and validating dam
 
 `CreateDamageRangeCurve(CurvePoints, bSaveToDisk, AssetPath, AssetName)` - Builds a `UCurveFloat` from a `TArray<FVector2D>` of (Distance, Damage) pairs. When `bSaveToDisk` is `true`, the curve is saved as a persistent Content Browser asset at the specified path. When `false`, a transient curve is returned for runtime use.
 
-Use the creator to:
-- Prototype damage envelopes without leaving the editor.
-- Export a finalised curve as a proper asset for further refinement in the Curve Editor.
-- Programmatically generate weapon-variant curves (e.g., short barrel vs. long barrel) from shared point arrays.
-
 ---
 
 ## Demo Level
