@@ -29,6 +29,13 @@ export default defineConfig({
 						{ label: 'Overview', link: 'weaponrangedamage' },
                         { label: 'Tutorial', link: 'weaponrangedamage/tutorial' },
 					],
+				},
+                {
+					label: 'Team Spawn System',
+					items: [
+						{ label: 'Overview', link: 'teamspawnsystem' },
+                        { label: 'Tutorial', link: 'teamspawnsystem/tutorial' },
+					],
 				}
 			],
 		}),
