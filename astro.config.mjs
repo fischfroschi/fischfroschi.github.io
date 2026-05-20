@@ -36,6 +36,13 @@ export default defineConfig({
 						{ label: 'Overview', link: 'teamspawnsystem' },
                         { label: 'Tutorial', link: 'teamspawnsystem/tutorial' },
 					],
+				},
+                {
+					label: 'Spline Area System',
+					items: [
+						{ label: 'Overview', link: 'splineareasystem' },
+                        { label: 'Tutorial', link: 'splineareasystem/tutorial' },
+					],
 				}
 			],
 		}),
