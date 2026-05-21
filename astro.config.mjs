@@ -41,7 +41,6 @@ export default defineConfig({
 					label: 'Spline Area System',
 					items: [
 						{ label: 'Overview', link: 'splineareasystem' },
-                        { label: 'Tutorial', link: 'splineareasystem/tutorial' },
 					],
 				}
 			],

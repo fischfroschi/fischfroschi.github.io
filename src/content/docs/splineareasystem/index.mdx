@@ -86,7 +86,7 @@ Two Blueprint-readable variables are available at any time:
 | `IterationTransforms` | Transform | The transforms generated for the current iteration |
 | `IterationIndex` | Integer | The index of the currently running iteration |
 
-Override `StartNextIteration` to react when a new circle begins — update UI, play a sound, or trigger a game event. Override `OnIterationEnded` and read `Zone Finished` to detect when all passes have completed.
+Override `StartNextIteration` to react when a new circle begins - update UI, play a sound, or trigger a game event. Override `OnIterationEnded` and read `Zone Finished` to detect when all passes have completed.
 
 ---
 
@@ -113,18 +113,17 @@ The offset settings control where the plane begins and ends its pass relative to
 | **Point Interval** | Spacing between generated points on the track path |
 | **Height Curve** | Float curve controlling the flight height of the plane along the track |
 
-### Track Lifecycle Events
-
-`BP_SplineAreaTrack` exposes Blueprint override events at key points in the track lifecycle.
+### Track Events
 
 ![Track Override Events](../../../assets/splineareasystem/trackoverrides.PNG)
 
-| Event | Fires When |
-|---|---|
-| `OnMovingEnded` | The plane finishes traveling the current track segment |
-| `OnValidAreaStateChanged` | The plane enters or exits the valid drop zone during its flight |
+| Event | Provides | Description |
+|---|---|---|
+| `StartMoving` | `Moving Actor` | Fires when the plane begins traveling the track; provides a reference to the moving actor |
+| `OnValidAreaStateChanged` | `Is in Valid Zone` | Fires when the plane enters or exits the valid drop zone |
+| `OnMovingEnded` | - | Fires when the plane finishes the current track pass |
 
-Override these in a Blueprint subclass to trigger gameplay logic - spawn drops, play audio, update UI - at the right moment in the flight path.
+Override `StartMoving` to get a reference to the plane actor - attach particles, play audio, or start a camera pan. Use `OnValidAreaStateChanged` with `Is in Valid Zone` to open or close the drop window in your game logic. Override `OnMovingEnded` to react when the pass is complete.
 
 ---
 
@@ -160,28 +159,52 @@ Inspect the demo Blueprint actors for annotated examples of every override event
 
 ### ASplineAreaActor
 
-| Function | Description |
-|---|---|
-| `RandomPointsInSplineArea(NumRandomPoints)` | Returns uniformly distributed random points inside the spline boundary |
-| `RayIntersectionsWithSplineBorder(Origin, Direction, bBidirectional)` | Returns all intersections between a ray and the spline border |
+| Function | Parameters | Description |
+|---|---|---|
+| `RandomPointsInSplineArea` | `NumRandomPoints` | Returns uniformly distributed random points inside the spline boundary |
+| `RayIntersectionsWithSplineBorder` | `RayOrigin`, `RayDirection`, `bBidirectional` | Returns all intersections between a ray and the spline border |
 
-### BP_SplineAreaZone - Key Properties
+### BP_SplineAreaZone
 
-| Property | Description |
-|---|---|
-| `Spline Area` | Map boundary reference |
-| `Num Iterations` | Number of shrink passes to run |
-| `Radius Variance` | Per-iteration circle size randomization |
-| `Radius Curve` | Zone circle radius profile over shrink progress |
-| `Time Curve` | Shrink timing and speed profile |
+| Setting | Type | Description |
+|---|---|---|
+| `Spline Area` | ASplineAreaActor | Map boundary reference |
+| `Num Iterations` | Integer | Number of shrink passes to run |
+| `Radius Variance` | Float | Per-iteration circle size randomization |
+| `Radius Curve` | CurveFloat | Zone circle radius profile over shrink progress |
+| `Time Curve` | CurveFloat | Shrink timing and speed profile |
 
-### BP_SplineAreaTrack - Key Properties
+| Event | Provides | Description |
+|---|---|---|
+| `StartNextIteration` | `Iteration Index` | Fires when a new shrink iteration begins |
+| `OnIterationEnded` | `Zone Finished` | Fires when an iteration completes |
 
-| Property | Description |
-|---|---|
-| `Velocity` | Plane movement speed along the track |
-| `Spline Area` | Map boundary reference |
-| `Area Start / Stop Offset Length` | Approach and exit offsets relative to the boundary |
-| `Valid Area Start / Stop Offset` | Drop zone window offsets inside the map area |
-| `Point Interval` | Track path point spacing |
-| `Height Curve` | Flight height profile along the track |
+| Variable | Type | Description |
+|---|---|---|
+| `IterationTransforms` | Transform | Transforms generated for the current iteration |
+| `IterationIndex` | Integer | Index of the currently running iteration |
+
+### BP_SplineAreaTrack
+
+| Setting | Type | Description |
+|---|---|---|
+| `Spline Area` | ASplineAreaActor | Map boundary reference |
+| `Velocity` | Float | Plane movement speed along the track |
+| `Area Start Offset Length` | Float | Approach offset outside the map polygon |
+| `Area Stop Offset Length` | Float | Exit offset before the far polygon edge |
+| `Valid Area Start Offset` | Float | Drop zone open offset inside the map polygon |
+| `Valid Area Stop Offset` | Float | Drop zone close offset before the far edge |
+| `Point Interval` | Float | Spacing between generated points on the track path |
+| `Height Curve` | CurveFloat | Flight height profile along the track |
+
+| Event | Provides | Description |
+|---|---|---|
+| `StartMoving` | `Moving Actor` | Fires when the plane begins traveling the track |
+| `OnValidAreaStateChanged` | `Is in Valid Zone` | Fires when the plane enters or exits the valid drop zone |
+| `OnMovingEnded` | - | Fires when the plane finishes the current track pass |
+
+### BP_SplineAreaZoneNotificationComponent
+
+| Event | Provides | Description |
+|---|---|---|
+| `OnValidAreaStateChanged` | `Is in Valid Zone` | Fires when the owning actor enters or exits the valid zone |
