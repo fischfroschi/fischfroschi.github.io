@@ -42,6 +42,12 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', link: 'splineareasystem' },
 					],
+				},
+                {
+					label: 'Multi Window System',
+					items: [
+						{ label: 'Overview', link: 'multiwindowsystem' },
+					],
 				}
 			],
 		}),
