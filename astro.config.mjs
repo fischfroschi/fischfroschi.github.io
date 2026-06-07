@@ -48,6 +48,12 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', link: 'multiwindowsystem' },
 					],
+				},
+                {
+					label: 'Render Target Replication',
+					items: [
+						{ label: 'Overview', link: 'rendertargetreplication' },
+					],
 				}
 			],
 		}),
