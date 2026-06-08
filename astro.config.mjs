@@ -54,6 +54,12 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', link: 'rendertargetreplication' },
 					],
+				},
+                {
+					label: 'Property Serialization',
+					items: [
+						{ label: 'Overview', link: 'propertyserialization' },
+					],
 				}
 			],
 		}),

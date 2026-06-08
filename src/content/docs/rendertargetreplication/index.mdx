@@ -13,7 +13,7 @@ description: UE plugin for replicating RenderTarget textures and Canvas instruct
 
 ## General
 
-The Render Target Replication plugin provides a complete networking framework for sharing **UTextureRenderTarget2D** content and **Canvas draw instructions** between server and clients. It is designed for multiplayer applications that need to distribute dynamic textures with minimal bandwidth.
+The Render Target Replication plugin provides a complete networking framework for sharing `UTextureRenderTarget2D` **pixel changes and draw instructions** between server and clients. It is designed for multiplayer applications that need to distribute dynamic textures with minimal bandwidth.
 
 The system runs through a dedicated TCP socket layer. Server-side GPU readback, delta compression, and Oodle packet compression are performed asynchronously. No manual replication setup is required beyond registering your render target with the subsystem.
 
@@ -23,7 +23,7 @@ Install the plugin from the Fab Store and enable it in your project. Redistribut
 
 ## Architecture
 
-The plugin is built around a **UWorldSubsystem** that manages all networking and readback. Optional actor and component wrappers are provided for quick setup. A **URTRepCanvas** object records draw calls so they can be compressed and replayed remotely.
+The plugin is built around a `UWorldSubsystem` that manages all networking and readback. Optional actor and component wrappers are provided for quick setup. A `URTRepCanvas` object records draw calls so they can be compressed and replayed remotely.
 
 | Class | Type | Responsibility |
 |------|------|----------------|
@@ -36,9 +36,9 @@ The plugin is built around a **UWorldSubsystem** that manages all networking and
 
 ## Subsystem Setup
 
-The subsystem initializes automatically when the world begins play if **bAutoSetup** is true. Otherwise, call **SetupNetworking()** manually from your GameMode or level Blueprint.
+The subsystem initializes automatically when the world begins play if `bAutoSetup` is `true`. Otherwise, call `SetupNetworking()` manually from your GameMode or level Blueprint.
 
-On the server, this creates a non-blocking TCP listen socket on **BasePort** (default 7787). On clients, it discovers the server IP from the active **NetConnection** and initiates a client socket.
+On the server, this creates a non-blocking TCP listen socket on `BasePort` (default `7787`). On clients, it discovers the server IP from the active `NetConnection` and initiates a client socket.
 
 ![Subsystem Settings](../../../assets/rendertargetreplication/subsystem.PNG)
 
@@ -59,23 +59,23 @@ URenderTargetReplicationSubsystem* Sub = World->GetSubsystem<URenderTargetReplic
 Sub->AddRenderTarget(FName("MyKey"), MyRenderTarget, MyActor, false);
 ```
 
-Alternatively, add a **URenderTargetReplicatorComponent** to any actor that owns a **UTextureRenderTarget2D**.
+Alternatively, add a `URenderTargetReplicatorComponent` to any actor that owns a `UTextureRenderTarget2D`.
 
 ![Component Setup](../../../assets/rendertargetreplication/component.PNG)
 
 | Property | Description |
 |----------|-------------|
 | RenderTarget | The texture to replicate |
-| NetworkKeyOverride | Manual FName key. If empty, the auto-generated **ReplicationId** is used |
+| NetworkKeyOverride | Manual FName key. If empty, the auto-generated `ReplicationId` is used |
 | bAllowClientUpload | If true, clients may push pixel data for this target back to the server |
 
-When the component begins play, it registers itself with the subsystem. If **NetworkKeyOverride** is empty, the server generates a unique **FGuid** (replicated to clients) and uses it as the network key.
+When the component begins play, it registers itself with the subsystem. If `NetworkKeyOverride` is empty, the server generates a unique `FGuid` (replicated to clients) and uses it as the network key.
 
 ---
 
 ## Render Target Replicator Actor
 
-Place **ARenderTargetReplicatorActor** in your level or spawn it at runtime. It hosts a **URenderTargetReplicatorComponent** and exposes Blueprint-callable sync functions.
+Place `ARenderTargetReplicatorActor` in your level or spawn it at runtime. It hosts a `URenderTargetReplicatorComponent` and exposes Blueprint-callable sync functions.
 
 ![Actor Setup](../../../assets/rendertargetreplication/actor.PNG)
 
@@ -85,7 +85,7 @@ You can assign a render target directly to the actor, or let the internal compon
 
 ## Pixel Synchronization
 
-Call **Server_SyncPixelChanges** on the authority to initiate a GPU readback for a specific key. The subsystem schedules an async readback via **FRHIGPUTextureReadback**. Once the render-thread fence completes, the raw bytes are handed off to a background compression task.
+Call `Server_SyncPixelChanges` on the authority to initiate a GPU readback for a specific key. The subsystem schedules an async readback. Once the render-thread fence completes, the raw bytes are handed off to a background compression task and then are distrubuted to all relavent clients.
 
 ![Pixel Sync](../../../assets/rendertargetreplication/pixelsync.PNG)
 
@@ -93,17 +93,29 @@ Call **Server_SyncPixelChanges** on the authority to initiate a GPU readback for
 
 ## Delta Compression
 
-When a previous frame baseline exists for a given client, the system runs a **16x16 block diff** between the current and previous frames. Only changed blocks are packed into a **DeltaSync** packet. If no deltas are found, the packet is dropped.
+When a previous frame baseline exists for a given client, the system runs a `16x16` block diff between the current and previous frames. Only changed blocks are packed into a `DeltaSync` packet. If no deltas are found, the packet is dropped.
 
-If no baseline exists, or if the client has not yet received a full frame, the system sends a **FullSync** packet instead. Clients are promoted to baseline-synced once they acknowledge a FullSync.
+If no baseline exists, or if the client has not yet received a full frame, the system sends a `FullSync` packet instead. Clients are promoted to baseline-synced once they acknowledge a `FullSync`.
+
+---
+
+## Client Upload
+
+Enable `bAllowClientUpload` on the replicator component or pass `true` to `AddRenderTarget` Clients can then call `Client_SyncPixelChanges` which performs a local GPU readback and transmits a `ClientUpload` packet to the server. The server applies the upload directly to its own render target and rebroadcast it. Client draw instructions are automatically uploaded to the server by calling `EndDrawCanvasToRenderTarget`.
+
+---
+
+## Net Cull Distance
+
+The subsystem respects the owning actor's `NetCullDistanceSquared`. Clients inside range (called relevant clients) receive `FullSync` or `DeltaSync` packets. Clients outside range are skipped entirely. Clients that leave range have their baseline invalidated and must receive a new `FullSyn`c before deltas resume.
 
 ---
 
 ## Canvas Drawing & Instruction Replication
 
-Instead of replicating raw pixels, you can replicate Canvas draw instructions. This is dramatically cheaper for UI-like content and supports materials, fonts, and textured primitives.
+Instead of replicating raw pixels, you can replicate Canvas draw instructions. This is dramatically cheaper and supports materials, fonts, and textured primitives.
 
-Use the subsystem's **BeginDrawCanvasToRenderTarget** and **EndDrawCanvasToRenderTarget** pair. Between these calls, the returned **URTRepCanvas** records every draw command into a compressed buffer.
+Use the subsystem's `BeginDrawCanvasToRenderTarget` and `EndDrawCanvasToRenderTarget` pair. Between these calls, the returned `URTRepCanvas` records every draw command into a compressed buffer. Make sure to call them within the same frame.
 
 ![Canvas Instructions](../../../assets/rendertargetreplication/instructions.PNG)
 
@@ -118,33 +130,19 @@ Use the subsystem's **BeginDrawCanvasToRenderTarget** and **EndDrawCanvasToRende
 - DrawMaterialTriangle
 - DrawPolygon
 
-When **EndDrawCanvasToRenderTarget** is called, the instruction buffer is compressed and dispatched. On the server, it broadcasts to all connected clients. On a client, it sends to the server which then broadcasts it.
+When `EndDrawCanvasToRenderTarget` is called, the instruction buffer is compressed and dispatched. On the server, it broadcasts to all connected relevant clients. On a client, it sends to the server which then broadcasts it.
 
 ---
 
 ##  Stability After Joining
 
-The replication pipeline is fully stable after joining. Late-joining clients automatically receive a FullSync baseline before any DeltaSync or canvas instructions are applied, ensuring they catch up to the current world state without manual intervention or visible corruption.
-
----
-
-## Client Upload
-
-Enable **bAllowClientUpload** on the replicator component or pass true to **AddRenderTarget**. Clients can then call **Client_SyncPixelChanges**, which performs a local GPU readback and transmits a **ClientUpload** packet to the server. The server applies the upload directly to its own render target and can optionally rebroadcast it.
-
----
-
-## Net Cull Distance
-
-The subsystem respects the owning actor's **NetCullDistanceSquared**. Clients inside range receive FullSync or DeltaSync packets. Clients outside range are skipped entirely. Clients that leave range have their baseline invalidated and must receive a new FullSync before deltas resume.
-
-All pixel and canvas packets travel over a dedicated TCP socket independent of Unreal's replication graph, ensuring large texture payloads do not congest the standard game socket.
+The replication pipeline is fully stable after joining. Late-joining clients automatically receive a `FullSync` baseline before any `DeltaSync` or canvas instructions are applied, ensuring they catch up to the current world state without manual intervention or visible corruption.
 
 ---
 
 ## Demo Level
 
-A complete working example is provided in **Content/Demo/L_RenderTargetReplicationDemo**.
+A complete working example is provided in `Content/Demo/L_RenderTargetReplicationDemo`.
 
 ![Demo Level](../../../assets/rendertargetreplication/demo.PNG)
 
